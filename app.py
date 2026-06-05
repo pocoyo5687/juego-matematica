@@ -31,7 +31,7 @@ st.markdown("""
 st.markdown('<div class="title">🧮 MathQuest</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">¡Responde rápido, sube de nivel y bate tu propio récord!</div>', unsafe_allow_html=True)
 
-# 2. Inicializar variables de juego (Session State para que la web recuerde los datos)
+# 2. Inicializar variables de juego en el Estado de la Sesión
 if 'score' not in st.session_state:
     st.session_state.score = 0
 if 'level' not in st.session_state:
@@ -53,7 +53,16 @@ def generar_pregunta():
         st.session_state.num1 = random.randint(3, 12)
         st.session_state.num2 = random.randint(3, 12)
         st.session_state.operator = '*'
+    
+    # GUARDAR LA RESPUESTA CORRECTA EN MEMORIA INMEDIATAMENTE
+    if st.session_state.operator == '+':
+        st.session_state.correct_ans = st.session_state.num1 + st.session_state.num2
+    elif st.session_state.operator == '-':
+        st.session_state.correct_ans = st.session_state.num1 - st.session_state.num2
+    else:
+        st.session_state.correct_ans = st.session_state.num1 * st.session_state.num2
 
+# Generar la primera pregunta si no existe
 if 'num1' not in st.session_state:
     generar_pregunta()
 
@@ -62,18 +71,6 @@ def reiniciar_juego():
     st.session_state.level = 1
     st.session_state.game_over = False
     generar_pregunta()
-
-# 3. Lógica matemática interna
-n1 = st.session_state.num1
-n2 = st.session_state.num2
-op = st.session_state.operator
-
-if op == '+':
-    correct_ans = n1 + n2
-elif op == '-':
-    correct_ans = n1 - n2
-else:
-    correct_ans = n1 * n2
 
 # Barra lateral informativa
 st.sidebar.header("🎮 Reglas del Juego")
@@ -91,34 +88,34 @@ if not st.session_state.game_over:
     with col2:
         st.metric(label="⭐ Nivel de Dificultad", value=st.session_state.level)
 
-    # Bloque visual de la pregunta matemática
-    st.info(f"### ¿Cuánto es: &nbsp;&nbsp;`{n1} {op} {n2}`?")
+    # Bloque visual de la pregunta matemática usando los datos guardados
+    st.info(f"### ¿Cuánto es: &nbsp;&nbsp;`{st.session_state.num1} {st.session_state.operator} {st.session_state.num2}`?")
 
-    # Formulario interactivo (Evita recargas de página molestas al escribir)
+    # Formulario interactivo
     with st.form(key='math_form', clear_on_submit=True):
         user_ans = st.number_input("Escribe tu respuesta aquí:", step=1, value=0)
         submit_button = st.form_submit_button(label='Enviar Respuesta 🚀')
 
     if submit_button:
-        if user_ans == correct_ans:
+        # Comparar con la respuesta guardada de forma segura
+        if user_ans == st.session_state.correct_ans:
             st.success("🎉 ¡Excelente! Respuesta correcta.")
             st.session_state.score += 1
             
-            # Subir de nivel cada 3 respuestas correctas
             if st.session_state.score % 3 == 0:
                 st.session_state.level += 1
-                st.balloons() # Lanza una animación de globos en la web
+                st.balloons()
                 
             generar_pregunta()
-            time.sleep(1) # Pequeña pausa estética
+            time.sleep(0.8)
             st.rerun()
         else:
             st.session_state.game_over = True
             st.rerun()
 
 else:
-    # Pantalla de derrota
-    st.error(f"❌ ¡Oh no, te has equivocado! La respuesta correcta era **{correct_ans}**.")
+    # Pantalla de derrota mostrando el resultado congelado
+    st.error(f"❌ ¡Oh no, te has equivocado! La respuesta correcta era **{st.session_state.correct_ans}**.")
     st.subheader(f"📊 Resumen del juego:")
     st.write(f"- **Puntos totales:** {st.session_state.score}")
     st.write(f"- **Nivel alcanzado:** Nivel {st.session_state.level}")
